@@ -1,1 +1,40 @@
+# ==============================================================================
+# Custom Snort NIDS Ruleset — Defense-in-Depth & Network Intrusion Labs
+# Repository: tactical-root
+# SID Range: 1000001 - 1000008 (Perimeter & Protocol Detection)
+#            2000001 - 2000002 (Cloud API & IoT Telemetry Inspection)
+# ==============================================================================
 
+# --- Part 1: Perimeter, Scanning & Protocol Anomalies (SID 1000001 - 1000008) ---
+
+# Rule 1: ICMP Oversized Echo Request (Ping Flood / ICMP Tunneling)
+alert icmp any any -> $HOME_NET any (msg:"CUSTOM ICMP Oversized Echo Request Probe"; itype:8; dsize:>1000; sid:1000001; rev:1;)
+
+# Rule 2: TCP Null Flags Scan (RFC 793 Stateless Filter Bypass)
+alert tcp any any -> $HOME_NET any (msg:"CUSTOM TCP Null Flags Invalid State Scan"; flags:0; sid:1000002; rev:1;)
+
+# Rule 3: TCP SYN-FIN Invalid State Transition (OS Fingerprinting / Evasion)
+alert tcp any any -> $HOME_NET any (msg:"CUSTOM TCP SYN-FIN Invalid Transition Probe"; flags:SF; sid:1000003; rev:1;)
+
+# Rule 4: HTTP URI Directory Traversal Attempt
+alert tcp any any -> $HOME_NET 80 (msg:"CUSTOM HTTP Directory Traversal Sequence Detected"; flow:to_server,established; content:"/.."; http_uri; nocase; sid:1000004; rev:2;)
+
+# Rule 5: Cleartext POSIX Interactive Shell Spawn Pattern (/bin/sh)
+alert tcp any any -> $HOME_NET any (msg:"CUSTOM Suspicious Interactive Shell Spawn Pattern"; flow:to_server,established; content:"/bin/sh"; fast_pattern; nocase; sid:1000005; rev:1;)
+
+# Rule 6: Excessive HTTP Request Burst Rate (Directory Fuzzing / DoS)
+alert tcp any any -> $HOME_NET 80 (msg:"CUSTOM Excessive HTTP Burst Rate Threshold Exceeded"; flow:to_server,established; detection_filter:track by_src, count 25, seconds 5; sid:1000006; rev:1;)
+
+# Rule 7: FTP Repeated Authentication Failure (530 Login Incorrect)
+alert tcp $HOME_NET 21 -> any any (msg:"CUSTOM FTP Repeated Login Failure 530 Response"; flow:from_server,established; content:"530 "; depth:4; sid:1000007; rev:1;)
+
+# Rule 8: Anomalous Large UDP DNS Datagram (RFC 1035 Limit / DNS Tunneling)
+alert udp any any -> $HOME_NET 53 (msg:"CUSTOM DNS Anomalous Large Datagram Size Exceeded"; dsize:>512; sid:1000008; rev:1;)
+
+# --- Part 2: Cloud API & IoT Telemetry Layer Inspection (SID 2000001 - 2000002) ---
+
+# Rule 9: Unauthorized Cloud Admin/Debug URI Probe
+alert tcp any any -> 192.168.20.50 80 (msg:"CP2 CUSTOM Cloud API Unauthorized Admin Endpoint Probe"; flow:to_server,established; content:"/admin-debug"; http_uri; nocase; sid:2000001; rev:1;)
+
+# Rule 10: Simulated IoT Unauthorized Command Execution Payload
+alert tcp any any -> 192.168.20.50 80 (msg:"CP2 CUSTOM Simulated IoT Unauthorized Command Payload"; flow:to_server,established; content:"IOT_CMD=EXEC"; nocase; sid:2000002; rev:1;)
